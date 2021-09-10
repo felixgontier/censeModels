@@ -1,5 +1,5 @@
 # censeModels
-
+ todo
 ## Setup
 
     python3.7 -m venv env/
@@ -17,4 +17,3 @@ See code for options
 
     python fast_to_slow.py
     python inference.py --exp TVBCense_Slow --dataset Lorient-1k_slow
-
