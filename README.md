@@ -9,8 +9,9 @@
 ## Eval fast
 
 Ensure Lorient-1k .npy files are in ./data/
+See code for options
 
-    python inference.py --exp TVBCense_Fast --
+    python inference.py --exp TVBCense_Fast
 
 ## Eval slow
 
