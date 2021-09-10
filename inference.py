@@ -25,6 +25,7 @@ def main(config):
     print('Model: ', modelName)
     
     presencePath = os.path.join(config.output_path, config.dataset+'_'+modelName+'_presence.npy')
+    scoresPath = os.path.join(config.output_path, config.dataset+'_'+modelName+'_scores.npy')
     if not os.path.exists(presencePath) or config.force_recompute:
         useCuda = torch.cuda.is_available() and not settings['training']['force_cpu']
         if useCuda:
@@ -57,6 +58,7 @@ def main(config):
         dec.eval()
         
         presence = np.zeros((dataSpec.shape[0], (dataSpec.shape[1] if 'Slow' in config.exp else dataSpec.shape[1]-7), len(settings['data']['classes'])))
+        scores = np.zeros(presence.shape)
         for k in tqdm(range(dataSpec.shape[0])):
             x = torch.Tensor(dataSpec[k,:,:]).type(dtype)
             x = F.pad(x.unsqueeze(0).unsqueeze(0)+settings['data']['level_offset_db'], (0, 3))
@@ -73,8 +75,10 @@ def main(config):
                 for iSeq in range(x.size(2)-7):
                     encData[:, iSeq, :] = enc(x[:, :, iSeq:iSeq+8, :].squeeze(1))
                 score = torch.sigmoid(dec(encData))
+            scores[k, :, :] = score.squeeze().cpu().data
             presence[k, :, :] = score.squeeze().round().cpu().data # TODO threshold
         np.save(presencePath, presence)
+        np.save(scoresPath, scores)
     else:
         presence = np.load(presencePath)
     
