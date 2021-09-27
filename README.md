@@ -21,10 +21,8 @@ See code for options
     python fast_to_slow.py
     python inference.py --exp TVBCense_Slow --dataset Lorient-1k_slow
 
-## Run fast
+## Run without evaluation
 
     python inference.py --exp TVBCense_Fast --no_metrics
+    python inference.py --exp TVBCense_Slow --dataset Lorient-1k_slow --no_metrics
 
-## Run slow
-
-    python inference.py --exp TVBCense_Slow --dataset Lorient-1k_slow
