@@ -12,20 +12,21 @@ def main(config):
     if not os.path.exists(config.output_path):
         os.makedirs(config.output_path)
     # Load datasets
-    dataSpec = np.load(os.path.join(config.data_path, config.dataset+'_spectralData.npy'), mmap_mode='r')
+    dataSpec = np.load(os.path.join(config.data_path, config.dataset+'_spectralData.npy'), allow_pickle=True)
     try:
         dataPres = np.load(os.path.join(config.data_path, config.dataset+'_presence.npy'), mmap_mode='r')
         dataTimePres = np.load(os.path.join(config.data_path, config.dataset+'_time_of_presence.npy'), mmap_mode='r')
     except FileNotFoundError:
         dataPres = None
         dataTimePres = None
-    
+
     settings = load_settings(Path('./exp_settings/', config.exp+'.yaml'))
     modelName = get_model_name(settings)
     print('Model: ', modelName)
-    
+
     presencePath = os.path.join(config.output_path, config.dataset+'_'+modelName+'_presence.npy')
     scoresPath = os.path.join(config.output_path, config.dataset+'_'+modelName+'_scores.npy')
+    print(presencePath)
     if not os.path.exists(presencePath) or config.force_recompute:
         useCuda = torch.cuda.is_available() and not settings['training']['force_cpu']
         if useCuda:
@@ -36,31 +37,37 @@ def main(config):
             print('No CUDA available.')
             dtype = torch.FloatTensor
             ltype = torch.LongTensor
-        
+
         # Model init.
         enc = VectorLatentEncoder(settings)
         dec = PresPredRNN(settings, dtype=dtype)
         if useCuda:
             enc = nn.DataParallel(enc).cuda()
             dec = nn.DataParallel(dec).cuda()
-        
+
         # Pretrained state dict. loading
         enc.load_state_dict(load_latest_model_from(settings['model']['checkpoint_dir'], modelName+'_enc', useCuda=useCuda))
         dec.load_state_dict(load_latest_model_from(settings['model']['checkpoint_dir'], modelName+'_dec', useCuda=useCuda))
-        
+
         print('Encoder: ', enc)
         print('Decoder: ', dec)
         print('Encoder parameter count: ', enc.module.parameter_count() if useCuda else enc.parameter_count())
         print('Decoder parameter count: ', dec.module.parameter_count() if useCuda else dec.parameter_count())
         print('Total parameter count: ', enc.module.parameter_count()+dec.module.parameter_count() if useCuda else enc.parameter_count()+dec.parameter_count())
-        
+
         enc.eval()
         dec.eval()
-        
-        presence = np.zeros((dataSpec.shape[0], (dataSpec.shape[1] if 'Slow' in config.exp else dataSpec.shape[1]-7), len(settings['data']['classes'])))
-        scores = np.zeros(presence.shape)
-        for k in tqdm(range(dataSpec.shape[0])):
-            x = torch.Tensor(dataSpec[k,:,:]).type(dtype)
+
+        print(dataSpec.shape)
+        print(len(dataSpec))
+
+        # presence = np.zeros((dataSpec.shape[0], (dataSpec.shape[1] if 'Slow' in config.exp else dataSpec.shape[1]-7), len(settings['data']['classes'])))
+        # scores = np.zeros(presence.shape)
+        presence = []
+        scores = []
+        for k in tqdm(range(len(dataSpec))):
+            print(dataSpec[k].shape)
+            x = torch.Tensor(dataSpec[k]).type(dtype)
             x = F.pad(x.unsqueeze(0).unsqueeze(0)+settings['data']['level_offset_db'], (0, 3))
             if useCuda:
                 x = x.cuda()
@@ -75,14 +82,15 @@ def main(config):
                 for iSeq in range(x.size(2)-7):
                     encData[:, iSeq, :] = enc(x[:, :, iSeq:iSeq+8, :].squeeze(1))
                 score = torch.sigmoid(dec(encData))
-            scores[k, :, :] = score.squeeze().cpu().data
-            presence[k, :, :] = score.squeeze().round().cpu().data # TODO threshold
-        np.save(presencePath, presence)
-        np.save(scoresPath, scores)
+            scores.append(score.squeeze().cpu().data)
+            presence.append(score.squeeze().round().cpu().data) # TODO threshold
+        np.save(presencePath, presence, allow_pickle=True)
+        np.save(scoresPath, scores, allow_pickle=True)
     else:
-        presence = np.load(presencePath)
-    
-    if not config.no_metrics:
+        presence = np.load(presencePath, allow_pickle=True)
+
+    if not config.no_metrics and dataPres is not None:
+        presence=np.stack(presence)
         if 'Ext' in config.exp:
             prediction[k, :, 0] = presence[:,0] + presence[:,1] + presence[:,2]
             prediction[k, :, 1] = presence[:,3]
@@ -94,9 +102,9 @@ def main(config):
         # Metrics
         reference = dataPres
         np.save(metricsPath+'_tppSe.npy', np.mean((np.mean(prediction, axis=1)-dataTimePres).flatten()**2))
-        
+
         np.save(metricsPath+'_accuracy.npy', (prediction==reference).flatten())
-        
+
         np.save(metricsPath+'_truePositive.npy', np.sum((prediction==1) & (reference==1))/np.sum(reference==1))
         np.save(metricsPath+'_trueNegative.npy', np.sum((prediction==0) & (reference==0))/np.sum(reference==0))
         np.save(metricsPath+'_falsePositive.npy', np.sum((prediction==1) & (reference==0))/np.sum(reference==0))
@@ -109,13 +117,13 @@ def main(config):
         print(' - False negative rate:  {:.4f}'.format(np.sum((prediction==0) & (reference==1))/np.sum(reference==1)))
         print(' - Time of presence MSE: {:.4f}'.format(np.mean((np.mean(prediction, axis=1)-dataTimePres).flatten()**2)))
         sources = ['traffic', 'voice', 'bird']
-        
+
         tp_s = np.sum(np.sum((prediction==1) & (reference==1), axis=0), axis=0)/np.sum(np.sum(reference==1, axis=0), axis=0)
         tn_s = np.sum(np.sum((prediction==0) & (reference==0), axis=0), axis=0)/np.sum(np.sum(reference==0, axis=0), axis=0)
         fp_s = np.sum(np.sum((prediction==1) & (reference==0), axis=0), axis=0)/np.sum(np.sum(reference==0, axis=0), axis=0)
         fn_s = np.sum(np.sum((prediction==0) & (reference==1), axis=0), axis=0)/np.sum(np.sum(reference==1, axis=0), axis=0)
         act_s = np.mean(np.mean(reference==1, axis=0), axis=0)
-        
+
         for si, s in enumerate(sources):
             print('Metrics for source {}'.format(s))
             np.save(metricsPath+'_'+s+'Accuracy.npy', (prediction[:, :, si]==reference[:, :, si]).flatten()) # Normal accuracy
@@ -141,5 +149,5 @@ if __name__ == '__main__':
     parser.add_argument('-force_recompute', action='store_true')
     parser.add_argument('-no_metrics', action='store_true')
     config = parser.parse_args()
-    
+
     main(config)
