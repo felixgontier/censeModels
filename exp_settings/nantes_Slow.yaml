@@ -17,7 +17,7 @@ data:
   - 'T'
   - 'V'
   - 'B'
-  level_offset_db: 15.90 # Correction to apply on simulated data to obtain 'real' sound levels
+  level_offset_db: 0 # Correction to apply on simulated data to obtain 'real' sound levels
   allow_example_overlap: true # Was set to false for fast models, to true for slow models
 model:
   checkpoint_dir: 'save'

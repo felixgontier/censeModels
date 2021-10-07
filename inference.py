@@ -58,15 +58,11 @@ def main(config):
         enc.eval()
         dec.eval()
 
-        print(dataSpec.shape)
-        print(len(dataSpec))
-
         # presence = np.zeros((dataSpec.shape[0], (dataSpec.shape[1] if 'Slow' in config.exp else dataSpec.shape[1]-7), len(settings['data']['classes'])))
         # scores = np.zeros(presence.shape)
         presence = []
         scores = []
         for k in tqdm(range(len(dataSpec))):
-            print(dataSpec[k].shape)
             x = torch.Tensor(dataSpec[k]).type(dtype)
             x = F.pad(x.unsqueeze(0).unsqueeze(0)+settings['data']['level_offset_db'], (0, 3))
             if useCuda:
@@ -82,10 +78,10 @@ def main(config):
                 for iSeq in range(x.size(2)-7):
                     encData[:, iSeq, :] = enc(x[:, :, iSeq:iSeq+8, :].squeeze(1))
                 score = torch.sigmoid(dec(encData))
-            scores.append(score.squeeze().cpu().data)
-            presence.append(score.squeeze().round().cpu().data) # TODO threshold
-        np.save(presencePath, presence, allow_pickle=True)
-        np.save(scoresPath, scores, allow_pickle=True)
+            scores.append(np.array(score.squeeze().cpu().data))
+            presence.append(np.array(score.squeeze().round().cpu().data)) # TODO threshold
+        np.save(presencePath, np.array(presence, dtype=object), allow_pickle=True)
+        np.save(scoresPath, np.array(scores, dtype=object), allow_pickle=True)
     else:
         presence = np.load(presencePath, allow_pickle=True)
 
