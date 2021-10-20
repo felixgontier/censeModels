@@ -7,11 +7,17 @@ from model import *
 from util import *
 import sys
 from tqdm import tqdm
+from data_loader import wav_to_npy_no_labels
 
 def main(config):
     if not os.path.exists(config.output_path):
         os.makedirs(config.output_path)
+    
+    settings = load_settings(Path('./exp_settings/', config.exp+'.yaml'))
+    
     # Load datasets
+    if not os.path.exists(os.path.join(config.data_path, config.dataset+'_spectralData.npy')):
+        wav_to_npy_no_labels(settings['data'], config.data_path, config.dataset)
     dataSpec = np.load(os.path.join(config.data_path, config.dataset+'_spectralData.npy'), allow_pickle=True)
     try:
         dataPres = np.load(os.path.join(config.data_path, config.dataset+'_presence.npy'), mmap_mode='r')
@@ -20,7 +26,6 @@ def main(config):
         dataPres = None
         dataTimePres = None
 
-    settings = load_settings(Path('./exp_settings/', config.exp+'.yaml'))
     modelName = get_model_name(settings)
     print('Model: ', modelName)
 

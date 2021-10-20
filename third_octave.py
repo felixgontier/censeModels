@@ -26,7 +26,7 @@ class ThirdOctaveTransform():
         self.w = np.ones(self.fLen)
         self.fft_norm = np.sum(np.square(self.w))/self.fLen
         print([np.sum(h) for h in self.H])
-        self.corr_global = 20*np.log10(self.l_frame/np.sqrt(2)) # This should be deducted from outputs in wave_to_third_octave, but is instead covered by lvl_offset_db in data_loader
+        self.corr_global = 20*np.log10(self.fLen/np.sqrt(2)) # This should be deducted from outputs in wave_to_third_octave, but is instead covered by lvl_offset_db in data_loader
 
     def wave_to_third_octave(self, x, zeroPad):
         if (x.shape[0]-self.fLen)%self.hLen != 0:
@@ -51,6 +51,6 @@ class ThirdOctaveTransform():
                 if X_tob[iBand, iFrame] == 0:
                     X_tob[iBand, iFrame] = 1e-15
             # dB, # - self.corr_global
-            X_tob[:, iFrame] = 10*np.log10(X_tob[:, iFrame])
+            X_tob[:, iFrame] = 10*np.log10(X_tob[:, iFrame]) - self.corr_global
         return X_tob
         

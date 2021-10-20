@@ -108,16 +108,29 @@ class PresPredDataset(torch.utils.data.Dataset):
             else:
                 return self.data_pres.shape[0]*int(np.floor(self.nFrames/self.seqLen))
 
-
+def wav_to_npy_no_labels(settings, dataPath, datasetName):
+    files, _ = list_all_audio_files(os.path.join(dataPath, datasetName, 'sound'))
+    tob_transform = ThirdOctaveTransform(settings['sr'], settings['frame_length'], settings['eval_hop_length'])
+    x_tob = []
+    for iF, file in enumerate(files):
+        print(files[iF])
+        x, _ = lr.load(path=file, sr=settings['sr'], mono=True)
+        x_tob.append(tob_transform.wave_to_third_octave(x, True).T)
+        print(x_tob[-1].shape)
+        print(x_tob[-1][5,:]+101)
+        print(' -> Processed ' + str(iF+1) + ' of ' + str(len(files)) + ' files')
+    np.save(os.path.join(dataPath, datasetName+'_spectralData.npy'), x_tob, allow_pickle=True)
+    
 def list_all_audio_files(audio_location, pres_location=None):
     pres_files = []
     audio_files = []
     for dirpath, dirnames, filenames in os.walk(audio_location):
         for filename in [f for f in sorted(filenames) if f.endswith(('.mp3', '.wav', '.aif', 'aiff')) and 'channel' not in f]:
-            pres_files.append(os.path.join(pres_location, filename[:-4]))
+            if pres_location is not None:
+                pres_files.append(os.path.join(pres_location, filename[:-4]))
             audio_files.append(os.path.join(dirpath, filename))
 
     if len(audio_files) == 0:
         print('found no audio files in ' + audio_location)
     return audio_files, pres_files
-
+    
