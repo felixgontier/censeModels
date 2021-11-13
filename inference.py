@@ -14,7 +14,7 @@ def main(config):
         os.makedirs(config.output_path)
     
     settings = load_settings(Path('./exp_settings/', config.exp+'.yaml'))
-    
+    print(config.dataset+'_spectralData.npy')
     # Load datasets
     if not os.path.exists(os.path.join(config.data_path, config.dataset+'_spectralData.npy')):
         wav_to_npy_no_labels(settings['data'], config.data_path, config.dataset)

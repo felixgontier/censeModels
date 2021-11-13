@@ -9,7 +9,8 @@ import csv
 import torch.nn.functional as F
 import librosa as lr
 from third_octave import ThirdOctaveTransform
-
+import sys
+np.set_printoptions(threshold=sys.maxsize)
 
 class PresPredDataset(torch.utils.data.Dataset):
     def __init__(self, settings, evalSet=False, subset='train'):
@@ -115,7 +116,9 @@ def wav_to_npy_no_labels(settings, dataPath, datasetName):
     for iF, file in enumerate(files):
         print(files[iF])
         x, _ = lr.load(path=file, sr=settings['sr'], mono=True)
+        print(x.shape)
         x_tob.append(tob_transform.wave_to_third_octave(x, True).T)
+        #print(x_tob[-1])
         print(x_tob[-1].shape)
         print(x_tob[-1][5,:]+101)
         print(' -> Processed ' + str(iF+1) + ' of ' + str(len(files)) + ' files')

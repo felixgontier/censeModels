@@ -40,7 +40,7 @@ class ThirdOctaveTransform():
         X_tob = np.zeros((len(self.f), nFrames))
         
         # Process
-        for iFrame in range(5,6):#nFrames):
+        for iFrame in range(nFrames):
             # Squared magnitude of RFFT
             X = np.fft.rfft(x[iFrame*self.hLen:iFrame*self.hLen+self.fLen]*self.w)
             X = np.square(np.absolute(X))/self.fft_norm
