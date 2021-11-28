@@ -1,9 +1,9 @@
 data:
   root_dir: data
   audio_dir: audio
-  model_name: TVBCense_Slow
-  dataset_name: nantes_Slow
-  eval_dataset_name: nantes_Slow
+  model_name: TVBCense_SlowZeros100
+  dataset_name: nantes_SlowZeros
+  eval_dataset_name: nantes_SlowZeros
   sr: 32000
   pad_examples: true # false for 125ms models, true for 1s models
   frame_length: 32768

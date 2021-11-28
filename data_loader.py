@@ -24,6 +24,9 @@ class PresPredDataset(torch.utils.data.Dataset):
         #self.valSplit = 0 if evalSet else settings['val_split']
         self.seqLen = settings['eval_seq_length'] if evalSet else settings['seq_length']
         self.classes = settings['classes']
+        self.zero_bands_lower = None
+        if 'zero_bands_lower' in settings.keys():
+            self.zero_bands_lower = settings['zero_bands_lower']
         self.nClasses = len(self.classes)
         
         if not os.path.isfile(self.datasetPath+'_'+subset+'_tob.npy'):
@@ -98,6 +101,10 @@ class PresPredDataset(torch.utils.data.Dataset):
                 input_x = torch.unsqueeze(torch.from_numpy(self.data_tob[iFile, iEx*self.seqLen:(iEx+1)*self.seqLen+(self.tLen-1), :]), 0)
                 pres = torch.unsqueeze(torch.from_numpy(self.data_pres[iFile, iEx*self.seqLen:(iEx+1)*self.seqLen, :self.nClasses]), 0)
             #print(input_x)
+            # ----- ZEROS ON BANDS LOWER THAN 100Hz ----- TODO
+            input_x = input_x.type(torch.FloatTensor)
+            input_x[:,:,:self.zero_bands_lower] = -self.lvlOffset
+            # ----- ZEROS ON BANDS LOWER THAN 100Hz ----- TODO
             return F.pad(input_x+self.lvlOffset, (0, 3)), pres # Pad last dimension (freq) from 29 to 32 for the encoder, plus level correction
 
     def __len__(self):
@@ -119,8 +126,8 @@ def wav_to_npy_no_labels(settings, dataPath, datasetName):
         print(x.shape)
         x_tob.append(tob_transform.wave_to_third_octave(x, True).T)
         #print(x_tob[-1])
-        print(x_tob[-1].shape)
-        print(x_tob[-1][5,:]+101)
+        #print(x_tob[-1].shape)
+        #print(x_tob[-1][5,:]+101)
         print(' -> Processed ' + str(iF+1) + ' of ' + str(len(files)) + ' files')
     np.save(os.path.join(dataPath, datasetName+'_spectralData.npy'), x_tob, allow_pickle=True)
     
