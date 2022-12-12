@@ -23,6 +23,6 @@ See code for options
 
 ## Run without evaluation
 
-    python inference.py --exp TVBCense_Fast -no_metrics
-    python inference.py --exp TVBCense_Slow --dataset Lorient-1k_slow -no_metrics
+    python inference.py --exp TVBCense_Fast --dataset Lorient-1k -no_metrics -force_recompute
+    python inference.py --exp TVBCense_Slow --dataset Lorient-1k_slow -no_metrics -force_recompute
 
