@@ -26,3 +26,4 @@ See code for options
     python inference.py --exp TVBCense_Fast --dataset Lorient-1k -no_metrics -force_recompute
     python inference.py --exp TVBCense_Slow --dataset Lorient-1k_slow -no_metrics -force_recompute
 
+Each produces 2 files located in the eval_output directory: \_presence.npy with boolean values indicating presence of a given source and \_scores.npy floating point values with likelihood of presence
