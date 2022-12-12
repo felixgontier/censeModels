@@ -1,0 +1,54 @@
+data:
+  root_dir: data
+  audio_dir: audio
+  model_name: TVBCense_Fast
+  dataset_name: TVBNCense_dev
+  eval_dataset_name: TVBNCense_eval
+  sr: 32000
+  pad_examples: false # false for 125ms models, true for 1s models
+  frame_length: 4096
+  hop_length: 4000
+  eval_hop_length: 4000
+  texture_length: 8
+  seq_length: 16 # Training sequence length for RNN classifier
+  eval_seq_length: 353 # Evaluation sequence length (RNN), can be the number of textures in each recording
+  val_split: 0.3
+  classes:
+  - 'T'
+  - 'V'
+  - 'B'
+  level_offset_db: 0 # Correction to apply on simulated data to obtain 'real' sound levels
+  allow_example_overlap: false # Was set to false for fast models, to true for slow models
+model:
+  checkpoint_dir: 'save'
+  logging_dir: 'logs'
+  load_full_pretrained: false
+  encoder:
+    pretraining: null # Arbitrary name of pretraining, is part of the downstream model name
+    pretrained_dir: null
+    pretrained_checkpoint: null
+    finetune: true # This affects encoder training regardless of pretrained initialization
+    nb_blocks: 3
+    nb_channels: 64
+    embedding_size: 128
+    kernel_size:
+    - 3 # T
+    - 3 # F
+    maxpool_size:
+    - 2 # T
+    - 2 # F
+    padding:
+    - 1 # T
+    - 1 # F
+  classifier:
+    type: rnn
+    hidden_dimensions: 128 # Dimension of recurrent state (RNN) or list of hidden layer dim. (CNN)
+training:
+  lr: 1.0e-05
+  batch_size: 32
+  nb_epochs: 100
+  force_cpu: false
+workflow:
+  evaluate: true
+  train: false
+  validate: false
